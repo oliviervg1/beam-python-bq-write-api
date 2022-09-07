@@ -1,3 +1,7 @@
+java/bq-write-api/.gradle/
+java/bq-write-api/build/
+java/bq-write-api/target/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
