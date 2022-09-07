@@ -109,16 +109,20 @@ def run(argv=None):
         p
         | 'Read from GCS' >> beam.io.textio.ReadFromText(known_args.input, skip_header_lines=1)
         | 'Parse Element' >> beam.Map(parse_element).with_output_types(TaxiSchema)
-        # | 'Write to BigQuery' >> beam.transforms.external.JavaExternalTransform(
-        #     'com.google.beam.bigquery.write.WriteToBigQuery',
-        #     classpath=[known_args.classpath]
-        # ).to(known_args.output).usingWriteAPIExactlyOnceMethod()
-        | 'Convert to Dict' >> beam.Map(lambda x: dict(x._asdict()))
-        | 'Write to BigQuery' >> beam.io.gcp.bigquery.WriteToBigQuery(
-            known_args.output,
-            create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-            write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE
-        )
+
+        # Use the BigQuery Write API (via Java x-language)
+        | 'Write to BigQuery' >> beam.transforms.external.JavaExternalTransform(
+            'com.google.beam.bigquery.write.WriteToBigQuery',
+            classpath=[known_args.classpath]
+        ).to(known_args.output).usingWriteAPIAtLeastOnceMethod()
+
+        # Use BigQuery file loads
+        # | 'Convert to Dict' >> beam.Map(lambda x: dict(x._asdict()))
+        # | 'Write to BigQuery' >> beam.io.gcp.bigquery.WriteToBigQuery(
+        #     known_args.output,
+        #     create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+        #     write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE
+        # )
     )
 
     result = p.run()
